@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // === Configuration ===
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
-const DEEPSEEK_API_KEY = 'sk-YOUR_API_KEY_HERE'; 
+const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e774393dfb5dc3'; 
 
 // The API endpoint for chat completions. This is correct as per the provided code.
 const DEEPSEEK_CHAT_API = 'https://api.deepseek.com/v1/chat/completions';
