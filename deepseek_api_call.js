@@ -9,12 +9,13 @@ const DEEPSEEK_CHAT_API = 'https://api.deepseek.com/v1/chat/completions';
 
 /**
  * Sends a message to the DeepSeek chat API to get an AI-generated response.
+ * Implements a retry mechanism with exponential backoff for error resilience.
  *
  * @param {Array} messages - An array of message objects to send to the API.
  * Each object should have a 'role' and 'content'.
  * e.g., [{ role: "user", content: "What is the capital of France?" }]
  * @returns {Promise<string|null>} A promise that resolves with the content of the AI's response,
- * or null if an error occurs.
+ * or null if an error occurs after all retries.
  */
 async function callDeepSeekChat(messages) {
   if (DEEPSEEK_API_KEY === 'sk-YOUR_API_KEY_HERE' || !DEEPSEEK_API_KEY) {
@@ -22,24 +23,41 @@ async function callDeepSeekChat(messages) {
     return null;
   }
 
-  try {
-    const response = await axios.post(DEEPSEEK_CHAT_API, {
-      model: "deepseek-chat", // The model to use
-      messages: messages,
-      temperature: 0.7,        // Controls the randomness of the response
-      max_tokens: 1000         // The maximum number of tokens to generate
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      }
-    });
+  const maxRetries = 10;
+  const initialDelayMs = 1000; // 1 second
 
-    const aiResponseContent = response.data.choices[0]?.message?.content;
-    return aiResponseContent;
-  } catch (error) {
-    console.error(`Error calling DeepSeek API: ${error.response?.data?.error?.message || error.message}`);
-    return null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post(DEEPSEEK_CHAT_API, {
+        model: "deepseek-chat", // The model to use
+        messages: messages,
+        temperature: 0.7,        // Controls the randomness of the response
+        max_tokens: 1000         // The maximum number of tokens to generate
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+        }
+      });
+
+      const aiResponseContent = response.data.choices[0]?.message?.content;
+      console.log(`API call succeeded on attempt ${attempt}.`);
+      return aiResponseContent;
+
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed: ${error.response?.data?.error?.message || error.message}`);
+
+      // If it's the last attempt, don't wait and just return null.
+      if (attempt === maxRetries) {
+        console.error('Max retries reached. Failed to call the DeepSeek API.');
+        return null;
+      }
+
+      // Calculate the delay using exponential backoff.
+      const delay = initialDelayMs * Math.pow(2, attempt - 1);
+      console.log(`Retrying in ${delay / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 }
 
@@ -77,8 +95,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "a futuristic world, sentient AI, philosophical journey, mystery";
-  const numChapters = 5;
+  const keywords = "simple, beautiful landscapes, introspective atmosphere, mundane work, minor story arc which leads to the protagonists death";
+  const numChapters = 2;
   const tenthsPerChapter = 10;
   const printSegmentLength = 5000;
   const printDelayMs = 1000;
