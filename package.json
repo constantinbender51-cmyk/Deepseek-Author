@@ -1,0 +1,21 @@
+{
+  "name": "deepseek-api-example",
+  "version": "1.0.0",
+  "description": "A simple example demonstrating how to call the DeepSeek API.",
+  "main": "deepseek_api_call.js",
+  "scripts": {
+    "start": "node deepseek_api_call.js"
+  },
+  "keywords": [
+    "deepseek",
+    "api",
+    "nodejs",
+    "ai",
+    "llm"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8"
+  }
+}
