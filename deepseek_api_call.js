@@ -149,6 +149,7 @@ async function main() {
     console.log(`Chapter will be generated in ${chapterOutline.parts} parts.`);
 
     let currentChapterText = "";
+    let lastPartContent = ""; // Variable to store the last added part
     fullBookContent += `\n\n--- Chapter ${chapterNumber} ---\n\n`;
 
     // 3. Generate the chapter content in parts using the new chapter outline
@@ -179,9 +180,18 @@ async function main() {
       }
 
       // Filter out the introductory sentences and asterisks
-      newPartContent = newPartContent.replace(/^Of course\. Here is the [a-zA-Z\s,]+part of the chapter[^.]*\./, '').trim();
+      newPartContent = newPartContent.replace(/^Of course\.[\s\S]*?here is[\s\S]*?\.\s*/i, '').trim();
       newPartContent = newPartContent.replace(/\*/g, '').trim();
 
+      // Check if the new part is a duplicate of the last part
+      if (newPartContent === lastPartContent) {
+        console.warn(`Duplicate part detected for Chapter ${chapterNumber}, part ${partNumber}. Skipping.`);
+        continue; // Skip adding this part and try generating the next one
+      }
+
+      // Update the last part content
+      lastPartContent = newPartContent;
+      
       // Check for the "END OF CHAPTER" flag and trim the content
       if (newPartContent.includes('END OF CHAPTER')) {
         console.log("END OF CHAPTER detected. Concluding chapter early.");
