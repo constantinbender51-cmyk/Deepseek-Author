@@ -1,10 +1,6 @@
-// To run this script, first install the 'node-fetch' library:
-// npm install node-fetch
-
 const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
-const fetch = require('node-fetch'); // Import the 'fetch' function from the node-fetch library.
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,7 +17,7 @@ app.get('/', async (req, res) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Generated Book</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400;0,700&display=swap');
           body {
             font-family: 'Merriweather', serif;
             line-height: 1.6;
@@ -65,9 +61,12 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server is running at http://localhost:${PORT}`);
   console.log('Access the book at http://localhost:3000');
+  
+  // Use a dynamic import for 'node-fetch' to avoid ERR_REQUIRE_ESM
+  const { default: fetch } = await import('node-fetch');
 
   /**
    * Fetches data from a specified URL after the server has successfully started.
