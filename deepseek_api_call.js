@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "dream, magical world, protagonist finds herself a lowly servant, awakes in middle of a street";
-  const numChapters = 1;
+  const keywords = "complex sentence structure, queer speech, deep philosophical undertone, cold personalities, hard truths, commitment";
+  const numChapters = 3;
 
   let bookOutline = "";
   let fullBookContent = "";
