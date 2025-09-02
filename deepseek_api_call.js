@@ -235,9 +235,16 @@ async function main() {
   // Output the final generated content
   await fs.writeFile('book_title_page.txt', cleanedTitlePageIndexContent);
   console.log('Title page saved to book_title_page.txt');
-  
-  await fs.writeFile('book_content.txt', fullBookContent);
-  console.log('Book content saved to book_content.txt');
+ 
+  // Prepend the new, cleaned content
+  const finalBookContent = `${cleanedTitlePageIndexContent}\n\n${fullBookContent}`;
+
+  try {
+    await fs.writeFile('book.txt', finalBookContent, 'utf8');
+    console.log("Book saved successfully to 'book.txt'.");
+  } catch (error) {
+    console.error("Failed to write book to file:", error);
+  }
 }
 
 // Run the main function
