@@ -139,10 +139,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (tenthNumber === 1) {
         // First tenth of a chapter
-        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs.\n\nChapter Outline: ${chapterOutline}`;
+        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts.\n\nChapter Outline: ${chapterOutline}`;
       } else {
         // Subsequent tenths
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs.\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts. \n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalTenth} tenth of Chapter ${chapterNumber}...`);
