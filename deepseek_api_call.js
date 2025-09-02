@@ -76,7 +76,7 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "chinese ghost stories, collection, chinese culture, mythology";
+  const keywords = "chinese ghost story, mythology, supernatural";
   const numChapters = 3;
   const tenthsPerChapter = 10;
 
