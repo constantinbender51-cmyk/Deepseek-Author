@@ -76,7 +76,7 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "short-story, finance, philosophy, selfish";
+  const keywords = "debate, politics, personal lifes";
   const numChapters = 2;
   const tenthsPerChapter = 10;
 
