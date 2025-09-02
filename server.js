@@ -1,6 +1,10 @@
+// To run this script, first install the 'node-fetch' library:
+// npm install node-fetch
+
 const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
+const fetch = require('node-fetch'); // Import the 'fetch' function from the node-fetch library.
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,5 +69,37 @@ app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
   console.log('Access the book at http://localhost:3000');
 
-  // Automatically fetch the external URL when the server starts.
+  /**
+   * Fetches data from a specified URL after the server has successfully started.
+   */
+  const fetchData = async () => {
+    const url = 'https://redis-prove-production.up.railway.app/fetch-and-save';
+  
+    console.log(`Attempting to fetch data from: ${url}`);
+  
+    try {
+      // Perform a GET request to the URL.
+      const response = await fetch(url);
+  
+      // Check if the response was successful (status code 200-299).
+      if (response.ok) {
+        // Get the response body as text.
+        const text = await response.text();
+        console.log('Successfully accessed the URL.');
+        console.log('Response status:', response.status);
+        console.log('Response body:', text);
+      } else {
+        // Log an error if the response was not successful.
+        console.error(`Error: Failed to access the URL. Status: ${response.status}`);
+        console.error('Status text:', response.statusText);
+      }
+    } catch (error) {
+      // Catch any network or other errors during the fetch.
+      console.error('An error occurred during the fetch operation:');
+      console.error(error);
+    }
+  };
+
+  // Call the fetch function automatically when the server starts.
+  fetchData();
 });
