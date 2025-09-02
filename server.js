@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
-const { default: fetch } = await import('node-fetch');
+const { default: fetch } = import('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
