@@ -78,7 +78,6 @@ async function main() {
   // === Book Customization Parameters ===
   const keywords = "chinese ghost story, mythology, supernatural";
   const numChapters = 3;
-  const tenthsPerChapter = 10;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -105,72 +104,79 @@ async function main() {
     let chapterOutlinePrompt = "";
     if (chapterIndex === 0) {
       // First chapter: only use the book outline
-      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1.\n\nOutline: ${bookOutline}`;
+      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Your response must be a single JSON object with two keys: "outline" (the chapter outline as a string) and "parts" (a number between 5 and 10 representing the number of parts the chapter should be split into). Do not include any text outside of the JSON object.\n\nOutline: ${bookOutline}`;
     } else {
       // Subsequent chapters: use the book outline and previous chapter outlines
       const previousOutlines = chapterOutlines.map((outline, index) =>
-        `Outline of Chapter ${index + 1}:\n${outline}`
+        `Outline of Chapter ${index + 1}:\n${outline.outline}`
       ).join("\n\n");
-      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
+      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Your response must be a single JSON object with two keys: "outline" (the chapter outline as a string) and "parts" (a number between 5 and 10 representing the number of parts the chapter should be split into). Do not include any text outside of the JSON object.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
     }
 
-    const chapterOutline = await callDeepSeekChat([{
+    const jsonResponse = await callDeepSeekChat([{
       role: "user",
       content: chapterOutlinePrompt
     }]);
 
-    if (!chapterOutline) {
-      console.error(`Failed to generate outline for Chapter ${chapterNumber}. Exiting.`);
+    let chapterOutline;
+    try {
+      chapterOutline = JSON.parse(jsonResponse);
+      if (!chapterOutline.outline || typeof chapterOutline.parts !== 'number') {
+        throw new Error("Invalid JSON structure.");
+      }
+    } catch (e) {
+      console.error(`Failed to parse JSON response for Chapter ${chapterNumber}. Exiting.`, e);
       return;
     }
     chapterOutlines.push(chapterOutline);
-    console.log(`Outline for Chapter ${chapterNumber} generated:\n`, chapterOutline);
+    console.log(`Outline for Chapter ${chapterNumber} generated:\n`, chapterOutline.outline);
+    console.log(`Chapter will be generated in ${chapterOutline.parts} parts.`);
 
     let currentChapterText = "";
     fullBookContent += `\n\n--- Chapter ${chapterNumber} ---\n\n`;
 
-    // 3. Generate the chapter content in "tenths" using the new chapter outline
-    for (let tenthIndex = 0; tenthIndex < tenthsPerChapter; tenthIndex++) {
-      const tenthNumber = tenthIndex + 1;
+    // 3. Generate the chapter content in parts using the new chapter outline
+    for (let partIndex = 0; partIndex < chapterOutline.parts; partIndex++) {
+      const partNumber = partIndex + 1;
       let userPrompt = "";
-      const ordinalTenth = getOrdinalString(tenthNumber);
+      const ordinalPart = getOrdinalString(partNumber);
 
       // New prompt with instruction for "END OF CHAPTER"
-      if (tenthNumber === 1) {
-        // First tenth of a chapter
-        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline}`;
+      if (partNumber === 1) {
+        // First part of a chapter
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline.outline}`;
       } else {
-        // Subsequent tenths
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        // Subsequent parts
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline.outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
-      console.log(`- Generating ${ordinalTenth} tenth of Chapter ${chapterNumber}...`);
+      console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
       const messages = [{
         role: "user",
         content: userPrompt
       }];
 
-      let newTenthContent = await callDeepSeekChat(messages);
-      if (!newTenthContent) {
-        console.error(`Failed to generate content for Chapter ${chapterNumber}, tenth ${tenthNumber}.`);
+      let newPartContent = await callDeepSeekChat(messages);
+      if (!newPartContent) {
+        console.error(`Failed to generate content for Chapter ${chapterNumber}, part ${partNumber}.`);
         break; // Exit the inner loop on failure
       }
 
       // Filter out the introductory sentences and asterisks
-      newTenthContent = newTenthContent.replace(/^Of course\. Here is the [a-zA-Z\s,]+tenth of the chapter[^.]*\./, '').trim();
-      newTenthContent = newTenthContent.replace(/\*/g, '').trim();
+      newPartContent = newPartContent.replace(/^Of course\. Here is the [a-zA-Z\s,]+part of the chapter[^.]*\./, '').trim();
+      newPartContent = newPartContent.replace(/\*/g, '').trim();
       
       // Check for the "END OF CHAPTER" flag and trim the content
-      if (newTenthContent.includes('END OF CHAPTER')) {
+      if (newPartContent.includes('END OF CHAPTER')) {
         console.log("END OF CHAPTER detected. Concluding chapter early.");
-        newTenthContent = newTenthContent.replace('END OF CHAPTER', '').trim();
-        currentChapterText += `\n\n${newTenthContent}`;
-        fullBookContent += `\n\n${newTenthContent}`;
+        newPartContent = newPartContent.replace('END OF CHAPTER', '').trim();
+        currentChapterText += `\n\n${newPartContent}`;
+        fullBookContent += `\n\n${newPartContent}`;
         break; // Break the inner loop to start the next chapter
       }
 
-      currentChapterText += `\n\n${newTenthContent}`;
-      fullBookContent += `\n\n${newTenthContent}`;
+      currentChapterText += `\n\n${newPartContent}`;
+      fullBookContent += `\n\n${newPartContent}`;
     }
   }
   
