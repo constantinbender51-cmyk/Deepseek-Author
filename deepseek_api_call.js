@@ -3,7 +3,7 @@ const fs = require('fs/promises');
 
 // === Configuration ===
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
-const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e7743dfb5dc3';
+const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e774393dfb5dc3';
 
 // The API endpoint for chat completions.
 const DEEPSEEK_CHAT_API = 'https://api.deepseek.com/v1/chat/completions';
