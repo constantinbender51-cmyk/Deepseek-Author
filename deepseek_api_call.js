@@ -1,5 +1,5 @@
 const axios = require('axios');
-const fs = require('fs/promises'); // Added for file system operations
+const fs = require('fs/promises');
 
 // === Configuration ===
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
@@ -96,7 +96,6 @@ async function main() {
     return;
   }
   console.log("Overall book outline generated:\n", bookOutline);
-  fullBookContent += `\n\nOutline:\n${bookOutline}\n\n`;
 
   // 2. Generate the book chapter by chapter
   for (let chapterIndex = 0; chapterIndex < numChapters; chapterIndex++) {
@@ -157,6 +156,10 @@ async function main() {
         break; // Exit the inner loop on failure
       }
 
+      // Filter out the introductory sentences and asterisks
+      newTenthContent = newTenthContent.replace(/^Of course\. Here is the [a-zA-Z\s,]+tenth of the chapter[^.]*\./, '').trim();
+      newTenthContent = newTenthContent.replace(/\*/g, '').trim();
+      
       // Check for the "END OF CHAPTER" flag and trim the content
       if (newTenthContent.includes('END OF CHAPTER')) {
         console.log("END OF CHAPTER detected. Concluding chapter early.");
@@ -170,11 +173,28 @@ async function main() {
       fullBookContent += `\n\n${newTenthContent}`;
     }
   }
+  
+  // 4. Generate the title page and index
+  console.log("\nStep 4: Book generation complete. Generating title page and index...");
+  const titleIndexPrompt = [{
+    role: "user",
+    content: `based on the book outline below and this book content generate a title page and index for the book. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
+  }];
 
-  // 4. Save the final book content to a file.
-  console.log("\nStep 4: Book generation complete. Saving the content to 'book.txt'...");
+  const titlePageIndexContent = await callDeepSeekChat(titleIndexPrompt);
+  if (!titlePageIndexContent) {
+    console.error("Failed to generate title page and index. Exiting.");
+    return;
+  }
+  
+  // 5. Assemble and save the final book content to a file.
+  console.log("\nStep 5: Assembling and saving the final book to 'book.txt'...");
+  
+  // Prepend the new content
+  const finalBookContent = `${titlePageIndexContent}\n\n${fullBookContent}`;
+  
   try {
-    await fs.writeFile('book.txt', fullBookContent, 'utf8');
+    await fs.writeFile('book.txt', finalBookContent, 'utf8');
     console.log("Book saved successfully to 'book.txt'.");
   } catch (error) {
     console.error("Failed to write book to file:", error);
