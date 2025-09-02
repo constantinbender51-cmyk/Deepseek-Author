@@ -81,7 +81,7 @@ async function main() {
 
   let bookOutline = "";
   let fullBookContent = "";
-  let chapterOutlineResponses = []; // Storing full string responses
+  let chapterOutlines = [];
 
   // 1. Generate the Book Outline
   console.log("Step 1: Generating the overall book outline...");
@@ -104,49 +104,161 @@ async function main() {
     let chapterOutlinePrompt = "";
     if (chapterIndex === 0) {
       // First chapter: only use the book outline
-      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Also include a JSON object with one key: "parts", indicating the number of parts the chapter can be divided into. You can write freely outside of the JSON object.`;
+      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nOutline: ${bookOutline}`;
     } else {
       // Subsequent chapters: use the book outline and previous chapter outlines
-      const previousOutlines = chapterOutlineResponses.map((response, index) =>
-        `Outline of Chapter ${index + 1}:\n${response}`
+      const previousOutlines = chapterOutlines.map((outline, index) =>
+        `Outline of Chapter ${index + 1}:\n${outline.outline}`
       ).join("\n\n");
-      chapterOutlinePrompt = `Based on the book outline below (and the book content so far), write the outline of chapter ${chapterNumber}. Also include a JSON object with one key: "parts", indicating the number of parts the chapter can be divided into. You can write freely outside of the JSON object.`;
+      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
     }
 
-    const aiResponse = await callDeepSeekChat([{
+    const jsonResponse = await callDeepSeekChat([{
       role: "user",
       content: chapterOutlinePrompt
     }]);
 
-    if (aiResponse) {
-      // Use a regex to find and extract the JSON object from the response string.
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const jsonString = jsonMatch[0];
-        try {
-          const parsedJson = JSON.parse(jsonString);
-          const chapterParts = parsedJson.parts;
-          if (chapterParts !== undefined) {
-            console.log(`Outline for Chapter ${chapterNumber} generated successfully. It will have ${chapterParts} parts.`);
-          }
-        } catch (e) {
-          console.error(`Failed to parse JSON from response:`, e.message);
-        }
+    let chapterOutline;
+    try {
+      // Use a regex to find the first JSON object in the response string.
+      const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON object found in the response.");
       }
-      chapterOutlineResponses.push(aiResponse); // Store the full response string
-    } else {
-      console.error(`Failed to generate outline for chapter ${chapterNumber}.`);
+      const jsonString = jsonMatch[0];
+
+      // Added a defensive check to fix common AI formatting issues before parsing
+      let cleanedJsonString = jsonString;
+      if (!jsonString.includes('"')) {
+        console.warn('AI response contains no double quotes. Attempting to fix by replacing single quotes.');
+        cleanedJsonString = jsonString.replace(/'/g, '"');
+      }
+
+      chapterOutline = JSON.parse(cleanedJsonString);
+
+      if (!chapterOutline.outline || typeof chapterOutline.parts !== 'number') {
+        throw new Error("Invalid JSON structure.");
+      }
+    } catch (e) {
+      console.error(`Failed to parse JSON response for Chapter ${chapterNumber}. Exiting.`, e);
+      console.log('Original AI response:', jsonResponse); // Log the full response for debugging
+      return;
+    }
+    chapterOutlines.push(chapterOutline);
+    console.log(`Outline for Chapter ${chapterNumber} generated:\n`, chapterOutline.outline);
+    console.log(`Chapter will be generated in ${chapterOutline.parts} parts.`);
+
+    let currentChapterText = "";
+    let lastPartContent = ""; // Variable to store the last added part
+    fullBookContent += `\n\n--- Chapter ${chapterNumber} ---\n\n`;
+
+    // 3. Generate the chapter content in parts using the new chapter outline
+    for (let partIndex = 0; partIndex < chapterOutline.parts; partIndex++) {
+      const partNumber = partIndex + 1;
+      let userPrompt = "";
+      const ordinalPart = getOrdinalString(partNumber);
+
+      // New prompt with instruction for "END OF CHAPTER"
+      if (partNumber === 1) {
+        // First part of a chapter
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}`;
+      } else {
+        // Subsequent parts
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}\n\nExisting Chapter Content: ${currentChapterText}`;
+      }
+
+      console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
+      const messages = [{
+        role: "user",
+        content: userPrompt
+      }];
+
+      let newPartContent = await callDeepSeekChat(messages);
+      if (!newPartContent) {
+        console.error(`Failed to generate content for Chapter ${chapterNumber}, part ${partNumber}.`);
+        break; // Exit the inner loop on failure
+      }
+
+      // Filter out the introductory sentences and asterisks
+      newPartContent = newPartContent.replace(/^Of course\.[\s\S]*?here is[\s\S]*?\.\s*/i, '').trim();
+      newPartContent = newPartContent.replace(/\*/g, '').trim();
+
+      // Check if the new part is a duplicate of the last part
+      if (newPartContent === lastPartContent) {
+        console.warn(`Duplicate part detected for Chapter ${chapterNumber}, part ${partNumber}. Skipping.`);
+        continue; // Skip adding this part and try generating the next one
+      }
+
+      // Update the last part content
+      lastPartContent = newPartContent;
+      
+      // Check for the "END OF CHAPTER" flag and trim the content
+      if (newPartContent.includes('END OF CHAPTER')) {
+        console.log("END OF CHAPTER detected. Concluding chapter early.");
+        newPartContent = newPartContent.replace('END OF CHAPTER', '').trim();
+        currentChapterText += `\n\n${newPartContent}`;
+        fullBookContent += `\n\n${newPartContent}`;
+        break; // Break the inner loop to start the next chapter
+      }
+
+      currentChapterText += `\n\n${newPartContent}`;
+      fullBookContent += `\n\n${newPartContent}`;
     }
   }
 
-  // At this point, you would proceed with generating the content for each chapter part.
-  console.log("\nFinished generating chapter outlines.");
-  if (chapterOutlineResponses.length > 0) {
-    console.log("Here are the generated chapter outlines:\n", chapterOutlineResponses);
-  } else {
-    console.log("No chapter outlines were successfully generated.");
+  // 4. Generate the title page and chapter overview
+  console.log("\nStep 4: Book generation complete. Generating title page and chapter overview...");
+  const titleIndexPrompt = [{
+    role: "user",
+    content: `based on the book outline below and this book content generate a title page containing title and chapters of the book, akin a digital index. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
+  }];
+
+  const titlePageIndexContent = await callDeepSeekChat(titleIndexPrompt);
+  if (!titlePageIndexContent) {
+    console.error("Failed to generate title page and chapter overview. Exiting.");
+    return;
+  }
+
+  // Clean the title page content of specific phrases and characters
+  let cleanedTitlePageIndexContent = titlePageIndexContent;
+  // Use a more flexible regex to handle variations of the introductory phrase
+  cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/Of course\.[\s\S]*?(?:title page|digital index)[\s\S]*?\.?/i, '').trim();
+  cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/[\*#]/g, '').trim();
+
+  // 5. Assemble and save the final book to a file.
+  console.log("\nStep 5: Assembling and saving the final book to 'book.txt'...");
+
+  // Prepend the new, cleaned content
+  const finalBookContent = `${cleanedTitlePageIndexContent}\n\n${fullBookContent}`;
+
+  try {
+    await fs.writeFile('book.txt', finalBookContent, 'utf8');
+    console.log("Book saved successfully to 'book.txt'.");
+  } catch (error) {
+    console.error("Failed to write book to file:", error);
+  }
+
+  // === New Step: Trigger the external website ===
+  console.log("Step 6: Triggering external website via POST request...");
+  try {
+    const response = await axios.post('https://redis-prove-production.up.railway.app/fetch-and-save');
+    console.log(`Successfully triggered website. Response status: ${response.status}`);
+  } catch (error) {
+    // This is the improved error handling block.
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error(`Request failed with status ${error.response.status}: ${error.response.statusText}`);
+      console.error('Server response data:', error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received from the server.');
+    } else {
+      // Something happened in setting up the request that triggered an error
+      console.error('Error in request setup:', error.message);
+    }
   }
 }
 
-// Start the book generation process.
+// Run the main function
 main();
