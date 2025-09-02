@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "complex sentence structure, queer speech, deep philosophical undertone, cold personalities, hard truths, commitment";
-  const numChapters = 3;
+  const keywords = "assassination of Kermit the frog, comedy, dark humor, puppets";
+  const numChapters = 1;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -244,7 +244,19 @@ async function main() {
     const response = await axios.post('https://redis-prove-production.up.railway.app/fetch-and-save');
     console.log(`Successfully triggered website. Response status: ${response.status}`);
   } catch (error) {
-    console.error(`Failed to trigger the website: ${error.message}`);
+    // This is the improved error handling block.
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error(`Request failed with status ${error.response.status}: ${error.response.statusText}`);
+      console.error('Server response data:', error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received from the server.');
+    } else {
+      // Something happened in setting up the request that triggered an error
+      console.error('Error in request setup:', error.message);
+    }
   }
 }
 
