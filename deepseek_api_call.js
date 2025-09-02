@@ -229,7 +229,7 @@ async function main() {
   // Clean the title page content of specific phrases and characters
   let cleanedTitlePageIndexContent = titlePageIndexContent;
   // Use a more flexible regex to handle variations of the introductory phrase
-  cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/Of course\.[\s\S]*?(?:title page|digital index)[\s\S]*?\.?/i, '').trim();
+  cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/^Of course\.[\s\S]*?here is[\s\S]*?\.\s*/i, '').trim();
   cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/[\*#]/g, '').trim();
   
   // Output the final generated content
