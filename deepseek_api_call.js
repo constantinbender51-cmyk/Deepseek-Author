@@ -3,7 +3,7 @@ const fs = require('fs/promises');
 
 // === Configuration ===
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
-const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e774393dfb5dc3';
+const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e7743dfb5dc3';
 
 // The API endpoint for chat completions.
 const DEEPSEEK_CHAT_API = 'https://api.deepseek.com/v1/chat/completions';
@@ -76,7 +76,7 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "horror, empty planet, expilicit content, mindbreak";
+  const keywords = "horror, empty planet, explicit content, mindbreak";
   const numChapters = 2;
 
   let bookOutline = "";
@@ -104,13 +104,13 @@ async function main() {
     let chapterOutlinePrompt = "";
     if (chapterIndex === 0) {
       // First chapter: only use the book outline
-      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Your response must be a single JSON object with two keys: "outline" (the chapter outline as a string) and "parts" (a number between 5 and 10 representing the number of parts the chapter should be split into). Do not include any text outside of the JSON object.\n\nOutline: ${bookOutline}`;
+      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Your response must be a single JSON object with two keys: "outline" (the chapter outline as a string) and "parts" (a number between 5 and 10 representing the number of parts the chapter should be split into). Do not include any text outside of the JSON object. The outline must be valid JSON.\n\nOutline: ${bookOutline}`;
     } else {
       // Subsequent chapters: use the book outline and previous chapter outlines
       const previousOutlines = chapterOutlines.map((outline, index) =>
         `Outline of Chapter ${index + 1}:\n${outline.outline}`
       ).join("\n\n");
-      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Your response must be a single JSON object with two keys: "outline" (the chapter outline as a string) and "parts" (a number between 5 and 10 representing the number of parts the chapter should be split into). Do not include any text outside of the JSON object.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
+      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Your response must be a single JSON object with two keys: "outline" (the chapter outline as a string) and "parts" (a number between 5 and 10 representing the number of parts the chapter should be split into). Do not include any text outside of the JSON object. The outline must be valid JSON.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
     }
 
     const jsonResponse = await callDeepSeekChat([{
@@ -121,14 +121,20 @@ async function main() {
     let chapterOutline;
     try {
       // Use a regex to find the first JSON object in the response string.
-      // This makes the parsing more robust to conversational filler from the AI.
       const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("No JSON object found in the response.");
       }
       const jsonString = jsonMatch[0];
-      
-      chapterOutline = JSON.parse(jsonString);
+
+      // Added a defensive check to fix common AI formatting issues before parsing
+      let cleanedJsonString = jsonString;
+      if (!jsonString.includes('"')) {
+        console.warn('AI response contains no double quotes. Attempting to fix by replacing single quotes.');
+        cleanedJsonString = jsonString.replace(/'/g, '"');
+      }
+
+      chapterOutline = JSON.parse(cleanedJsonString);
       
       if (!chapterOutline.outline || typeof chapterOutline.parts !== 'number') {
         throw new Error("Invalid JSON structure.");
