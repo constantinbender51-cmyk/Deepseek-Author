@@ -245,6 +245,26 @@ async function main() {
   } catch (error) {
     console.error("Failed to write book to file:", error);
   }
+  // === New Step: Trigger the external website ===
+  console.log("Step 6: Triggering external website via POST request...");
+  try {
+    const response = await axios.get('https://redis-prove-production.up.railway.app/fetch-and-save');
+    console.log(`Successfully triggered website. Response status: ${response.status}`);
+  } catch (error) {
+    // This is the improved error handling block.
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error(`Request failed with status ${error.response.status}: ${error.response.statusText}`);
+      console.error('Server response data:', error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received from the server.');
+    } else {
+      // Something happened in setting up the request that triggered an error
+      console.error('Error in request setup:', error.message);
+    }
+  }
 }
 
 // Run the main function
