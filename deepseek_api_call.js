@@ -3,7 +3,7 @@ const fs = require('fs/promises');
 
 // === Configuration ===
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
-const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e774393dfb5dc3';
+const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e7743dfb5dc3';
 
 // The API endpoint for chat completions.
 const DEEPSEEK_CHAT_API = 'https://api.deepseek.com/v1/chat/completions';
@@ -120,12 +120,22 @@ async function main() {
 
     let chapterOutline;
     try {
-      chapterOutline = JSON.parse(jsonResponse);
+      // Use a regex to find the first JSON object in the response string.
+      // This makes the parsing more robust to conversational filler from the AI.
+      const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON object found in the response.");
+      }
+      const jsonString = jsonMatch[0];
+      
+      chapterOutline = JSON.parse(jsonString);
+      
       if (!chapterOutline.outline || typeof chapterOutline.parts !== 'number') {
         throw new Error("Invalid JSON structure.");
       }
     } catch (e) {
       console.error(`Failed to parse JSON response for Chapter ${chapterNumber}. Exiting.`, e);
+      console.log('Original AI response:', jsonResponse); // Log the full response for debugging
       return;
     }
     chapterOutlines.push(chapterOutline);
@@ -193,7 +203,7 @@ async function main() {
     return;
   }
   
-  // 5. Assemble and save the final book content to a file.
+  // 5. Assemble and save the final book to a file.
   console.log("\nStep 5: Assembling and saving the final book to 'book.txt'...");
   
   // Prepend the new content
