@@ -99,68 +99,87 @@ async function main() {
   // 2. Generate the book chapter by chapter
   for (let chapterIndex = 0; chapterIndex < numChapters; chapterIndex++) {
     const chapterNumber = chapterIndex + 1;
+    let outlineGenerationSuccess = false;
+    const maxOutlineRetries = 5;
+
     console.log(`\nStep 2: Generating outline for Chapter ${chapterNumber}...`);
 
-    let chapterOutlinePrompt = "";
-    if (chapterIndex === 0) {
-      // First chapter: only use the book outline
-      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nOutline: ${bookOutline}`;
-    } else {
-      // Subsequent chapters: use the book outline and previous chapter outlines
-      const previousOutlines = chapterOutlines.map((outline, index) =>
-        `Outline of Chapter ${index + 1}:\n${outline.outline}`
-      ).join("\n\n");
-      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
+    for (let attempt = 1; attempt <= maxOutlineRetries; attempt++) {
+      let chapterOutlinePrompt = "";
+      if (chapterIndex === 0) {
+        // First chapter: only use the book outline
+        chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nOutline: ${bookOutline}`;
+      } else {
+        // Subsequent chapters: use the book outline and previous chapter outlines
+        const previousOutlines = chapterOutlines.map((outline, index) =>
+          `Outline of Chapter ${index + 1}:\n${outline.outline}`
+        ).join("\n\n");
+        chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
+      }
+
+      const jsonResponse = await callDeepSeekChat([{
+        role: "user",
+        content: chapterOutlinePrompt
+      }]);
+
+      let parsedJson;
+      let plainTextOutline;
+
+      if (!jsonResponse) {
+        console.error("API call failed, cannot attempt to parse JSON.");
+        continue; // Try again
+      }
+
+      try {
+        // Use a regex to find the first JSON object in the response string.
+        const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error("No JSON object found in the response.");
+        }
+        const jsonString = jsonMatch[0];
+
+        // Added a defensive check to fix common AI formatting issues before parsing
+        let cleanedJsonString = jsonString;
+        if (!jsonString.includes('"')) {
+          console.warn('AI response contains no double quotes. Attempting to fix by replacing single quotes.');
+          cleanedJsonString = jsonString.replace(/'/g, '"');
+        }
+        
+        parsedJson = JSON.parse(cleanedJsonString);
+        
+        // Extract the plain text content by removing the JSON string
+        plainTextOutline = jsonResponse.replace(jsonString, '').trim();
+
+        if (typeof parsedJson.parts !== 'number') {
+          throw new Error("Invalid JSON structure.");
+        }
+
+        // If we reach here, parsing was successful.
+        outlineGenerationSuccess = true;
+        chapterOutlines.push({ outline: plainTextOutline, parts: parsedJson.parts });
+        
+        console.log(`Outline for Chapter ${chapterNumber} generated on attempt ${attempt}:\n`, plainTextOutline);
+        console.log(`Chapter will be generated in ${parsedJson.parts} parts.`);
+        break; // Exit the retry loop
+      } catch (e) {
+        console.error(`Attempt ${attempt} failed to parse JSON for Chapter ${chapterNumber}. Retrying...`, e);
+        console.log('Original AI response:', jsonResponse); // Log the full response for debugging
+        // Loop will continue to the next attempt
+      }
     }
 
-    const jsonResponse = await callDeepSeekChat([{
-      role: "user",
-      content: chapterOutlinePrompt
-    }]);
-
-    let parsedJson;
-    let plainTextOutline;
-    try {
-      // Use a regex to find the first JSON object in the response string.
-      const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("No JSON object found in the response.");
-      }
-      const jsonString = jsonMatch[0];
-
-      // Added a defensive check to fix common AI formatting issues before parsing
-      let cleanedJsonString = jsonString;
-      if (!jsonString.includes('"')) {
-        console.warn('AI response contains no double quotes. Attempting to fix by replacing single quotes.');
-        cleanedJsonString = jsonString.replace(/'/g, '"');
-      }
-      
-      parsedJson = JSON.parse(cleanedJsonString);
-      
-      // Extract the plain text content by removing the JSON string
-      plainTextOutline = jsonResponse.replace(jsonString, '').trim();
-
-      if (typeof parsedJson.parts !== 'number') {
-        throw new Error("Invalid JSON structure.");
-      }
-    } catch (e) {
-      console.error(`Failed to parse JSON response for Chapter ${chapterNumber}. Exiting.`, e);
-      console.log('Original AI response:', jsonResponse); // Log the full response for debugging
+    // Check if outline generation failed after all retries
+    if (!outlineGenerationSuccess) {
+      console.error(`Failed to generate a valid chapter outline for Chapter ${chapterNumber} after all retries. Exiting.`);
       return;
     }
-    
-    // Store both the plain text outline and the number of parts in an object
-    chapterOutlines.push({ outline: plainTextOutline, parts: parsedJson.parts });
-    
-    console.log(`Outline for Chapter ${chapterNumber} generated:\n`, plainTextOutline);
-    console.log(`Chapter will be generated in ${parsedJson.parts} parts.`);
 
     let currentChapterText = "";
     let lastPartContent = ""; // Variable to store the last added part
     fullBookContent += `\n\n--- Chapter ${chapterNumber} ---\n\n`;
 
     // 3. Generate the chapter content in parts using the new chapter outline
-    for (let partIndex = 0; partIndex < parsedJson.parts; partIndex++) {
+    for (let partIndex = 0; partIndex < chapterOutlines[chapterIndex].parts; partIndex++) {
       const partNumber = partIndex + 1;
       let userPrompt = "";
       const ordinalPart = getOrdinalString(partNumber);
@@ -168,10 +187,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (partNumber === 1) {
         // First part of a chapter
-        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${parsedJson.parts}. \n\nChapter Outline: ${plainTextOutline}`;
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
       } else {
         // Subsequent parts
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${parsedJson.parts}. \n\nChapter Outline: ${plainTextOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
@@ -199,15 +218,6 @@ async function main() {
       // Update the last part content
       lastPartContent = newPartContent;
       
-      // Check for the "END OF CHAPTER" flag and trim the content
-      if (newPartContent.includes('END OF CHAPTER')) {
-        console.log("END OF CHAPTER detected. Concluding chapter early.");
-        newPartContent = newPartContent.replace('END OF CHAPTER', '').trim();
-        currentChapterText += `\n\n${newPartContent}`;
-        fullBookContent += `\n\n${newPartContent}`;
-        break; // Break the inner loop to start the next chapter
-      }
-
       currentChapterText += `\n\n${newPartContent}`;
       fullBookContent += `\n\n${newPartContent}`;
     }
@@ -244,26 +254,6 @@ async function main() {
     console.log("Book saved successfully to 'book.txt'.");
   } catch (error) {
     console.error("Failed to write book to file:", error);
-  }
-  // === New Step: Trigger the external website ===
-  console.log("Step 6: Triggering external website via POST request...");
-  try {
-    const response = await axios.get('https://redis-prove-production.up.railway.app/fetch-and-save');
-    console.log(`Successfully triggered website. Response status: ${response.status}`);
-  } catch (error) {
-    // This is the improved error handling block.
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error(`Request failed with status ${error.response.status}: ${error.response.statusText}`);
-      console.error('Server response data:', error.response.data);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received from the server.');
-    } else {
-      // Something happened in setting up the request that triggered an error
-      console.error('Error in request setup:', error.message);
-    }
   }
 }
 
