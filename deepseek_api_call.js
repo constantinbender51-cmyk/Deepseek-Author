@@ -4,7 +4,7 @@ const axios = require('axios');
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
 const DEEPSEEK_API_KEY = 'sk-ae85860567f8462b95e774393dfb5dc3';
 
-// The API endpoint for chat completions. This is correct as per the provided code.
+// The API endpoint for chat completions.
 const DEEPSEEK_CHAT_API = 'https://api.deepseek.com/v1/chat/completions';
 
 /**
@@ -31,8 +31,8 @@ async function callDeepSeekChat(messages) {
       const response = await axios.post(DEEPSEEK_CHAT_API, {
         model: "deepseek-chat", // The model to use
         messages: messages,
-        temperature: 0.7,        // Controls the randomness of the response
-        max_tokens: 1000         // The maximum number of tokens to generate
+        temperature: 0.7, // Controls the randomness of the response
+        max_tokens: 1000 // The maximum number of tokens to generate
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -95,18 +95,18 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "slice of life, chinese and english language, comedy";
-  const numChapters = 3;
+  const keywords = "ancient greek mythology, conversation, maturity";
+  const numChapters = 1;
   const tenthsPerChapter = 10;
   const printSegmentLength = 5000;
   const printDelayMs = 1000;
 
   let bookOutline = "";
   let fullBookContent = "";
-  let chapterSummaries = [];
+  let chapterOutlines = [];
 
   // 1. Generate the Book Outline
-  console.log("Step 1: Generating book outline...");
+  console.log("Step 1: Generating the overall book outline...");
   const outlinePrompt = [{
     role: "user",
     content: `Based on the keywords "${keywords}", generate a book outline with ${numChapters} chapters. Do not include any extra text besides the outline.`
@@ -116,69 +116,73 @@ async function main() {
     console.error("Failed to generate outline. Exiting.");
     return;
   }
-  console.log("Outline generated:\n", bookOutline);
+  console.log("Overall book outline generated:\n", bookOutline);
   fullBookContent += `\n\nOutline:\n${bookOutline}\n\n`;
 
   // 2. Generate the book chapter by chapter
   for (let chapterIndex = 0; chapterIndex < numChapters; chapterIndex++) {
     const chapterNumber = chapterIndex + 1;
-    console.log(`\nStep 2: Generating Chapter ${chapterNumber}...`);
+    console.log(`\nStep 2: Generating outline for Chapter ${chapterNumber}...`);
+
+    let chapterOutlinePrompt = "";
+    if (chapterIndex === 0) {
+      // First chapter: only use the book outline
+      chapterOutlinePrompt = `Based on the book outline below, write the outline of chapter 1.\n\nOutline: ${bookOutline}`;
+    } else {
+      // Subsequent chapters: use the book outline and previous chapter outlines
+      const previousOutlines = chapterOutlines.map((outline, index) =>
+        `Outline of Chapter ${index + 1}:\n${outline}`
+      ).join("\n\n");
+      chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
+    }
+
+    const chapterOutline = await callDeepSeekChat([{
+      role: "user",
+      content: chapterOutlinePrompt
+    }]);
+
+    if (!chapterOutline) {
+      console.error(`Failed to generate outline for Chapter ${chapterNumber}. Exiting.`);
+      return;
+    }
+    chapterOutlines.push(chapterOutline);
+    console.log(`Outline for Chapter ${chapterNumber} generated:\n`, chapterOutline);
 
     let currentChapterText = "";
-    
-    const summariesText = chapterSummaries.length > 0
-      ? ` and the summaries of previous chapters, which are:\n${chapterSummaries.join("\n")}`
-      : "";
+    fullBookContent += `\n\n--- Chapter ${chapterNumber} ---\n\n`;
 
-    // Generate the chapter in "tenths"
+    // 3. Generate the chapter content in "tenths" using the new chapter outline
     for (let tenthIndex = 0; tenthIndex < tenthsPerChapter; tenthIndex++) {
       const tenthNumber = tenthIndex + 1;
       let userPrompt = "";
-      
       const ordinalTenth = getOrdinalString(tenthNumber);
 
       if (tenthNumber === 1) {
         // First tenth of a chapter
-        userPrompt = `Based on the book outline below${summariesText}, write the first tenth of chapter ${chapterNumber}. That's 3-5 paragraphs.\n\nOutline: ${bookOutline}`;
+        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs.\n\nChapter Outline: ${chapterOutline}`;
       } else {
         // Subsequent tenths
-        userPrompt = `Based on the book outline below${summariesText} and the existing content of the current chapter, write the ${ordinalTenth} tenth of chapter ${chapterNumber}. That's 3-5 paragraphs.\n\nOutline: ${bookOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs.\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
-      
+
       console.log(`- Generating ${ordinalTenth} tenth of Chapter ${chapterNumber}...`);
       const messages = [{
         role: "user",
         content: userPrompt
       }];
-      
+
       const newTenthContent = await callDeepSeekChat(messages);
       if (!newTenthContent) {
         console.error(`Failed to generate content for Chapter ${chapterNumber}, tenth ${tenthNumber}.`);
         break; // Exit the inner loop on failure
       }
-      
+
       currentChapterText += `\n\n${newTenthContent}`;
       fullBookContent += `\n\n${newTenthContent}`;
     }
-
-    // Summarize the completed chapter
-    if (currentChapterText.length > 0) {
-      console.log(`\nStep 3: Summarizing Chapter ${chapterNumber}...`);
-      const summaryPrompt = [{
-        role: "user",
-        content: `Summarize this chapter.\n\nChapter: ${currentChapterText}`
-      }];
-      const chapterSummary = await callDeepSeekChat(summaryPrompt);
-      if (chapterSummary) {
-        chapterSummaries.push(`Chapter ${chapterNumber}: ${chapterSummary}`);
-        console.log(`Summary of Chapter ${chapterNumber}:\n`, chapterSummary);
-      } else {
-        console.error(`Failed to summarize Chapter ${chapterNumber}.`);
-      }
-    }
   }
 
-  // 3. Print the final book with delay
+  // 4. Print the final book with delay
   console.log("\nStep 4: Book generation complete. Printing the entire book with a delay...");
   printWithDelay(fullBookContent, printSegmentLength, printDelayMs);
 }
