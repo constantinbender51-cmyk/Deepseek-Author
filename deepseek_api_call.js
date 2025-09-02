@@ -154,10 +154,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (partNumber === 1) {
         // First part of a chapter
-        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline.outline}`;
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}`;
       } else {
         // Subsequent parts
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline.outline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
