@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "chinese ghost story, mythology, supernatural";
-  const numChapters = 3;
+  const keywords = "sci-fi, 2125, plot, characters, depth";
+  const numChapters = 4;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -154,10 +154,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (partNumber === 1) {
         // First part of a chapter
-        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}`;
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}`;
       } else {
         // Subsequent parts
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 3-5 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutline.parts}. \n\nChapter Outline: ${chapterOutline.outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
@@ -190,16 +190,16 @@ async function main() {
     }
   }
   
-  // 4. Generate the title page and index
-  console.log("\nStep 4: Book generation complete. Generating title page and index...");
+  // 4. Generate the title page and chapter overview
+  console.log("\nStep 4: Book generation complete. Generating title page and chapter overview...");
   const titleIndexPrompt = [{
     role: "user",
-    content: `based on the book outline below and this book content generate a title page and index for the book. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
+    content: `based on the book outline below and this book content generate a title page and a chapter overview for the book. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
   }];
 
   const titlePageIndexContent = await callDeepSeekChat(titleIndexPrompt);
   if (!titlePageIndexContent) {
-    console.error("Failed to generate title page and index. Exiting.");
+    console.error("Failed to generate title page and chapter overview. Exiting.");
     return;
   }
   
