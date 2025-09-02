@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "sci-fi, 2125, plot, characters, depth";
-  const numChapters = 4;
+  const keywords = "horror, empty planet, expilicit content, mindbreak";
+  const numChapters = 2;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -194,7 +194,7 @@ async function main() {
   console.log("\nStep 4: Book generation complete. Generating title page and chapter overview...");
   const titleIndexPrompt = [{
     role: "user",
-    content: `based on the book outline below and this book content generate a title page and a chapter overview for the book. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
+    content: `based on the book outline below and this book content generate a title page containing title and chapters of the book, akin a digital index. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
   }];
 
   const titlePageIndexContent = await callDeepSeekChat(titleIndexPrompt);
