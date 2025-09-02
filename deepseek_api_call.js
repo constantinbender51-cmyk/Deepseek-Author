@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "horror, empty planet, explicit content, mindbreak";
-  const numChapters = 2;
+  const keywords = "dream, magical world, protagonist finds herself a lowly servant, awakes in middle of a street";
+  const numChapters = 1;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -135,7 +135,7 @@ async function main() {
       }
 
       chapterOutline = JSON.parse(cleanedJsonString);
-      
+
       if (!chapterOutline.outline || typeof chapterOutline.parts !== 'number') {
         throw new Error("Invalid JSON structure.");
       }
@@ -181,7 +181,7 @@ async function main() {
       // Filter out the introductory sentences and asterisks
       newPartContent = newPartContent.replace(/^Of course\. Here is the [a-zA-Z\s,]+part of the chapter[^.]*\./, '').trim();
       newPartContent = newPartContent.replace(/\*/g, '').trim();
-      
+
       // Check for the "END OF CHAPTER" flag and trim the content
       if (newPartContent.includes('END OF CHAPTER')) {
         console.log("END OF CHAPTER detected. Concluding chapter early.");
@@ -195,7 +195,7 @@ async function main() {
       fullBookContent += `\n\n${newPartContent}`;
     }
   }
-  
+
   // 4. Generate the title page and chapter overview
   console.log("\nStep 4: Book generation complete. Generating title page and chapter overview...");
   const titleIndexPrompt = [{
@@ -208,18 +208,33 @@ async function main() {
     console.error("Failed to generate title page and chapter overview. Exiting.");
     return;
   }
-  
+
+  // Clean the title page content of specific phrases and characters
+  let cleanedTitlePageIndexContent = titlePageIndexContent;
+  // Use a more flexible regex to handle variations of the introductory phrase
+  cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/Of course\.[\s\S]*?(?:title page|digital index)[\s\S]*?\.?/i, '').trim();
+  cleanedTitlePageIndexContent = cleanedTitlePageIndexContent.replace(/[\*#]/g, '').trim();
+
   // 5. Assemble and save the final book to a file.
   console.log("\nStep 5: Assembling and saving the final book to 'book.txt'...");
-  
-  // Prepend the new content
-  const finalBookContent = `${titlePageIndexContent}\n\n${fullBookContent}`;
-  
+
+  // Prepend the new, cleaned content
+  const finalBookContent = `${cleanedTitlePageIndexContent}\n\n${fullBookContent}`;
+
   try {
     await fs.writeFile('book.txt', finalBookContent, 'utf8');
     console.log("Book saved successfully to 'book.txt'.");
   } catch (error) {
     console.error("Failed to write book to file:", error);
+  }
+
+  // === New Step: Trigger the external website ===
+  console.log("Step 6: Triggering external website via POST request...");
+  try {
+    const response = await axios.post('https://redis-prove-production.up.railway.app/fetch-and-save');
+    console.log(`Successfully triggered website. Response status: ${response.status}`);
+  } catch (error) {
+    console.error(`Failed to trigger the website: ${error.message}`);
   }
 }
 
