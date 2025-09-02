@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "debate, politics, personal lifes";
-  const numChapters = 2;
+  const keywords = "chinese ghost stories, collection, chinese culture, mythology";
+  const numChapters = 3;
   const tenthsPerChapter = 10;
 
   let bookOutline = "";
@@ -139,10 +139,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (tenthNumber === 1) {
         // First tenth of a chapter
-        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts.\n\nChapter Outline: ${chapterOutline}`;
+        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline}`;
       } else {
         // Subsequent tenths
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts. \n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. Fit only so much material in this part, that you have enough for the remaining parts. If you run out of material and have no thing to elaborate, write "END OF CHAPTER".\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalTenth} tenth of Chapter ${chapterNumber}...`);
