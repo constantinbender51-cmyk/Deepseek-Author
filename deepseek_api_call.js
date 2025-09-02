@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "assassination of Kermit the frog, comedy, dark humor, puppets";
-  const numChapters = 1;
+  const keywords = "slice of life, chinese in Europe, work, cultural differences, humor";
+  const numChapters = 3;
 
   let bookOutline = "";
   let fullBookContent = "";
