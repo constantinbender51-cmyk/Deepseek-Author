@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "slice of life, chinese in Europe, work, cultural differences, humor";
-  const numChapters = 3;
+  const keywords = "Winnie the Pooh, and the horror of the burning mansion, 24 people died, accident, investigation, pooh crime suspect, max pain style reconciliation";
+  const numChapters = 1;
 
   let bookOutline = "";
   let fullBookContent = "";
