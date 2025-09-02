@@ -4,7 +4,7 @@
 "description": "A web server to display a generated book.",
 "main": "server.js",
 "scripts": {
-"start": "node server.js"
+"start": "node start.js"
 },
 "keywords": [
 "deepseek",
