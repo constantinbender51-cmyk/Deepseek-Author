@@ -139,10 +139,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (tenthNumber === 1) {
         // First tenth of a chapter
-        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. If you have concluded the chapter prematurely, although I advice against it, use END OF CHAPTER at the end of your writing.\n\nChapter Outline: ${chapterOutline}`;
+        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. If you have to conclude the chapter early, use END OF CHAPTER at the end of your writing. A typical chapter has 30 to 120 paragraphs, so if your chapter is shorter than the outline, you're doing something wrong.\n\nChapter Outline: ${chapterOutline}`;
       } else {
         // Subsequent tenths
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. If you have concluded the chapter prematurely, although I advise against it, use END OF CHAPTER at the end of your writing.\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. If you have to conclude the chapter early, use END OF CHAPTER at the end of your writing. A typical chapter has 30 to 120 paragraphs, so if your chapter is shorter than the outline, you're doing something wrong. \n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalTenth} tenth of Chapter ${chapterNumber}...`);
