@@ -76,8 +76,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "Winnie the Pooh, and the horror of the burning mansion, 24 people died, accident, investigation, pooh crime suspect, max pain style reconciliation";
-  const numChapters = 1;
+  const keywords = "robotics, ai, experiment, plot";
+  const numChapters = 9;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -187,10 +187,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (partNumber === 1) {
         // First part of a chapter
-        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 2-4 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
       } else {
         // Subsequent parts
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 5-10 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 2-4 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
