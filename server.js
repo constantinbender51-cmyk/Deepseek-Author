@@ -1,31 +1,9 @@
 const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
-const { default: fetch } = import('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Function to fetch data from the external URL
-const fetchExternalUrl = async () => {
-  const url = 'https://redis-prove-production.up.railway.app/fetch-and-save';
-  console.log(`[SERVER] Automatically fetching data from: ${url}`);
-
-  try {
-    const response = await fetch(url);
-    const responseText = await response.text();
-
-    if (response.ok) {
-      console.log(`[SERVER] Successfully accessed URL. Status: ${response.status}`);
-      console.log(`[SERVER] Response: ${responseText}`);
-    } else {
-      console.error(`[SERVER] Failed to access URL. Status: ${response.status}`);
-      console.error(`[SERVER] Status Text: ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error('[SERVER] An error occurred while fetching the URL:', error);
-  }
-};
 
 // Route to serve the generated book content
 app.get('/', async (req, res) => {
@@ -88,9 +66,4 @@ app.listen(PORT, () => {
   console.log('Access the book at http://localhost:3000');
 
   // Automatically fetch the external URL when the server starts.
-  try {
-  fetchExternalUrl();
-  } catch (error) {
-    console.log("error fetching https://redis-prove-production.up.railway.app/fetch-and-save");
-  }
 });
