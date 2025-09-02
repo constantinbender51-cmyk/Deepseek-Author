@@ -114,7 +114,7 @@ async function main() {
         const previousOutlines = chapterOutlines.map((outline, index) =>
           `Outline of Chapter ${index + 1}:\n${outline.outline}`
         ).join("\n\n");
-        chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write an outline of chapter ${chapterNumber}. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
+        chapterOutlinePrompt = `Based on the book outline below and the outlines of previous chapters, write the outline of chapter ${chapterNumber}. Include in your response a json object with the key "parts" indicating the number of parts the chapter can be divided in to.\n\nBook Outline: ${bookOutline}\n\nPrevious Chapter Outlines:\n${previousOutlines}`;
       }
 
       const jsonResponse = await callDeepSeekChat([{
@@ -227,7 +227,7 @@ async function main() {
   console.log("\nStep 4: Book generation complete. Generating title page and chapter overview...");
   const titleIndexPrompt = [{
     role: "user",
-    content: `based on the book outline below and this book content generate a title page containing title and chapters of the book, akin a digital index. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
+    content: `based on the book outline below and this book content generate a title page containing title and table of contents. Outline: ${bookOutline}\nBook content: ${fullBookContent}`
   }];
 
   const titlePageIndexContent = await callDeepSeekChat(titleIndexPrompt);
