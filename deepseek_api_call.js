@@ -1,4 +1,5 @@
 const axios = require('axios');
+const fs = require('fs/promises'); // Added for file system operations
 
 // === Configuration ===
 // IMPORTANT: Replace this with your actual DeepSeek API Key.
@@ -62,26 +63,6 @@ async function callDeepSeekChat(messages) {
 }
 
 /**
- * Prints a long string in segments with a delay between each segment.
- *
- * @param {string} text - The full text to print.
- * @param {number} segmentLength - The number of characters per segment.
- * @param {number} delayMs - The delay in milliseconds between printing segments.
- */
-function printWithDelay(text, segmentLength, delayMs) {
-  let index = 0;
-  const interval = setInterval(() => {
-    if (index < text.length) {
-      console.log(text.substring(index, index + segmentLength));
-      index += segmentLength;
-    } else {
-      clearInterval(interval);
-      console.log("\n--- Book printing complete. ---");
-    }
-  }, delayMs);
-}
-
-/**
  * Helper function to get the ordinal string for a number.
  * @param {number} n - The number.
  * @returns {string} The ordinal string (e.g., "first", "second").
@@ -95,11 +76,9 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "ancient greek mythology, conversation, maturity";
-  const numChapters = 1;
+  const keywords = "short-story, finance, philosophy, morality";
+  const numChapters = 2;
   const tenthsPerChapter = 10;
-  const printSegmentLength = 5000;
-  const printDelayMs = 1000;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -157,12 +136,13 @@ async function main() {
       let userPrompt = "";
       const ordinalTenth = getOrdinalString(tenthNumber);
 
+      // New prompt with instruction for "END OF CHAPTER"
       if (tenthNumber === 1) {
         // First tenth of a chapter
-        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs.\n\nChapter Outline: ${chapterOutline}`;
+        userPrompt = `Based on the following chapter outline, write the first tenth of the chapter. That's 3-5 paragraphs. If you have concluded the chapter, use END OF CHAPTER at the end of your writing.\n\nChapter Outline: ${chapterOutline}`;
       } else {
         // Subsequent tenths
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs.\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalTenth} tenth of the chapter. That's 3-5 paragraphs. If you have concluded the chapter, use END OF CHAPTER at the end of your writing.\n\nChapter Outline: ${chapterOutline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalTenth} tenth of Chapter ${chapterNumber}...`);
@@ -171,10 +151,19 @@ async function main() {
         content: userPrompt
       }];
 
-      const newTenthContent = await callDeepSeekChat(messages);
+      let newTenthContent = await callDeepSeekChat(messages);
       if (!newTenthContent) {
         console.error(`Failed to generate content for Chapter ${chapterNumber}, tenth ${tenthNumber}.`);
         break; // Exit the inner loop on failure
+      }
+
+      // Check for the "END OF CHAPTER" flag and trim the content
+      if (newTenthContent.includes('END OF CHAPTER')) {
+        console.log("END OF CHAPTER detected. Concluding chapter early.");
+        newTenthContent = newTenthContent.replace('END OF CHAPTER', '').trim();
+        currentChapterText += `\n\n${newTenthContent}`;
+        fullBookContent += `\n\n${newTenthContent}`;
+        break; // Break the inner loop to start the next chapter
       }
 
       currentChapterText += `\n\n${newTenthContent}`;
@@ -182,9 +171,14 @@ async function main() {
     }
   }
 
-  // 4. Print the final book with delay
-  console.log("\nStep 4: Book generation complete. Printing the entire book with a delay...");
-  printWithDelay(fullBookContent, printSegmentLength, printDelayMs);
+  // 4. Save the final book content to a file.
+  console.log("\nStep 4: Book generation complete. Saving the content to 'book.txt'...");
+  try {
+    await fs.writeFile('book.txt', fullBookContent, 'utf8');
+    console.log("Book saved successfully to 'book.txt'.");
+  } catch (error) {
+    console.error("Failed to write book to file:", error);
+  }
 }
 
 // Run the main function
