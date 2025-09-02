@@ -88,5 +88,9 @@ app.listen(PORT, () => {
   console.log('Access the book at http://localhost:3000');
 
   // Automatically fetch the external URL when the server starts.
+  try {
   fetchExternalUrl();
+  } catch (error) {
+    console.log("error fetching https://redis-prove-production.up.railway.app/fetch-and-save");
+  }
 });
