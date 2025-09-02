@@ -95,8 +95,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "simple, beautiful landscapes, introspective atmosphere, mundane work, minor story arc which leads to the protagonists death";
-  const numChapters = 2;
+  const keywords = "slice of life, chinese and english language, comedy";
+  const numChapters = 3;
   const tenthsPerChapter = 10;
   const printSegmentLength = 5000;
   const printDelayMs = 1000;
