@@ -33,7 +33,7 @@ async function callDeepSeekChat(messages) {
   model: "deepseek-chat", // The model to use
   messages: messages,
   temperature: 0.2,      // Low temperature for high coherence and consistency
-  max_tokens: 20000,    // Increased token limit for long-form output
+  max_tokens: 8192,    // Increased token limit for long-form output
   top_p: 0.9,            // Ensures the model stays on topic
   presence_penalty: 0.5, // Discourages repeating topics
   frequency_penalty: 0.5 // Discourages repeating specific words
