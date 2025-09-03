@@ -30,16 +30,20 @@ async function callDeepSeekChat(messages) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await axios.post(DEEPSEEK_CHAT_API, {
-        model: "deepseek-chat", // The model to use
-        messages: messages,
-        temperature: 0.7, // Controls the randomness of the response
-        max_tokens: 1000 // The maximum number of tokens to generate
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-        }
-      });
+  model: "deepseek-chat", // The model to use
+  messages: messages,
+  temperature: 0.2,      // Low temperature for high coherence and consistency
+  max_tokens: 20000,    // Increased token limit for long-form output
+  top_p: 0.9,            // Ensures the model stays on topic
+  presence_penalty: 0.5, // Discourages repeating topics
+  frequency_penalty: 0.5 // Discourages repeating specific words
+}, {
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+  }
+});
+
 
       const aiResponseContent = response.data.choices[0]?.message?.content;
       console.log(`API call succeeded on attempt ${attempt}.`);
@@ -76,8 +80,8 @@ function getOrdinalString(n) {
 // === Main Book Generation Logic ===
 async function main() {
   // === Book Customization Parameters ===
-  const keywords = "robotics, ai, experiment, plot";
-  const numChapters = 9;
+  const keywords = "lecture series, albert Einstein, allgemeine Relativitätstheorie, questions";
+  const numChapters = 3;
 
   let bookOutline = "";
   let fullBookContent = "";
@@ -187,10 +191,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (partNumber === 1) {
         // First part of a chapter
-        userPrompt = `Based on the following chapter outline, write the first part of the chapter. That's 2-4 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. Your response should be ~5 pages, or ~45,000 words or ~45 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
       } else {
         // Subsequent parts
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. That's 2-4 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. Your response should be ~5 pages, or ~45,000 words or ~45 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
