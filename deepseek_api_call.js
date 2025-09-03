@@ -191,10 +191,10 @@ async function main() {
       // New prompt with instruction for "END OF CHAPTER"
       if (partNumber === 1) {
         // First part of a chapter
-        userPrompt = `Based on the following chapter outline, write the first part of the chapter. Your response should be ~5 pages, or ~45,000 words or ~45 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
+        userPrompt = `Based on the following chapter outline, write the first part of the chapter. Your response should be ~30 pages, or ~10,000 words or ~10 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}`;
       } else {
         // Subsequent parts
-        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. Your response should be ~5 pages, or ~45,000 words or ~45 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
+        userPrompt = `Based on the following chapter outline and the existing content of the current chapter, write the ${ordinalPart} part of the chapter. Your response should be ~30 pages, or ~10,000 words or ~10 paragraphs. You are writing part ${partNumber} of ${chapterOutlines[chapterIndex].parts}. \n\nChapter Outline: ${chapterOutlines[chapterIndex].outline}\n\nExisting Chapter Content: ${currentChapterText}`;
       }
 
       console.log(`- Generating ${ordinalPart} part of Chapter ${chapterNumber}...`);
