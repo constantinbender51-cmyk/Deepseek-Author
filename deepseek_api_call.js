@@ -36,7 +36,7 @@ async function callDeepSeekChat(messages) {
   max_tokens: 8100,    // Increased token limit for long-form output
   top_p: 0.9,            // Ensures the model stays on topic
   presence_penalty: 0.5, // Discourages repeating topics
-  frequency_penalty: 0.5 // Discourages repeating specific words
+  frequency_penalty: 0.3 // Discourages repeating specific words
 }, {
   headers: {
     'Content-Type': 'application/json',
